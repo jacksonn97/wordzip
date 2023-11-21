@@ -1,6 +1,4 @@
 
-#![allow(unused)]
-
 use itertools::Itertools;
 
 use crate::{
@@ -9,85 +7,62 @@ use crate::{
     indexation::*,
     Result,
 };
-
 use std::{
     fs::File,
     collections::HashMap,
     io::Read,
 };
 
-pub enum Do {
-    Zip(Zip),       // struct inside
-    Unzip(Unzip),   // struct inside
-}
-
-pub struct Zip {
-    original: String,
-    compressed: String,
-    map: Map,
-}
-
-pub struct Unzip {
-    compressed: String,
-    original: String,
-    map: Map,
-}
-
-struct CharSet {
-    set: [char; 2]
-}
-
-struct Map {
-    map: HashMap<CharSet, String>
-}
-
-pub struct ToSave {
-    content: String,
-    map: Option<Map>
-}
-
-impl Do {
-
-    #[inline]
-    pub fn proc(self) -> ToSave {
-        match self {
-            Self::Zip(z)    => z.proc(),
-            Self::Unzip(u)  => u.proc(),
+pub fn print(mut f: Files) -> Result<()> {
+    let mut s = String::new();
+    f.r#if.read_to_string(&mut s)?;
+    for w in s.split(' ') {
+        if !w.is_empty() {
+            println!("{w}")
         }
     }
+    Ok(())
+}
+
+pub fn proc(mut f: Files) -> Result<()> {
+    let mut s = String::new();
+    f.r#if.read_to_string(&mut s)?;
+    let mut words = Words::new();
+    let _ = s.split_whitespace().map(|w| words.insert(w)).collect_vec();
+    words.clean();
+
+    println!("Words to cut: {:?}", words.total());
+    // for w in words {
+    //     println!("{:?}", w);
+    // }
+    Ok(())
+}
+
+struct Zip {
+    of: File,
+    dict: HashMap<String, char>,
+    words: Vec<Word>,
+    chars: Vec<char>,
 }
 
 impl Zip {
 
     #[inline]
-    pub fn new(original: String) -> Self {
-        unimplemented!()
+    pub fn new(of: File, words: Vec<String>, chars: Vec<char>) -> Self {
+        todo!()
     }
 
     #[inline]
-    pub fn proc(self) -> ToSave {
-        unimplemented!()
-    }
-}
+    fn create_map(&mut self) {
+        if self.words.len() > self.chars.len() {
+            
+            
+            
 
-impl Unzip {
-
-    #[inline]
-    pub fn new(original: String) -> Self {
-        unimplemented!()
-    }
-
-    #[inline]
-    pub fn proc(self) -> ToSave {
-        unimplemented!()
-    }
-}
-
-
-
-
-impl From<[char; 2]> for CharSet {
-    fn from(set: [char; 2]) -> Self {
-        Self { set }
+        } else {
+            self.words.iter().zip(self.chars.iter())
+                .map(|(w, ch)| self.dict.insert(w.to_owned().into_str(), ch.to_owned()))
+                .collect_vec();
+        }
     }
 }
