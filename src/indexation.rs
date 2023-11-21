@@ -107,6 +107,13 @@ pub(self) mod word {
         word_type: WordType,
     }
 
+    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+    pub enum WordType {
+        VeryLong(usize),
+        Long(usize),
+        Short(usize),
+    }
+
     impl Word {
         
         #[inline]
@@ -149,13 +156,6 @@ pub(self) mod word {
         pub fn word_type(&self) -> WordType {
             self.word_type
         }
-    }
-
-    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
-    pub enum WordType {
-        VeryLong(usize),
-        Long(usize),
-        Short(usize),
     }
 
     impl WordType {

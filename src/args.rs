@@ -20,8 +20,8 @@ pub struct Args {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Mode {
-    Comp,
-    Decomp,
+    Zip,
+    Unzip,
 }
 
 impl Args {
@@ -34,8 +34,8 @@ impl Args {
         let mut args = MArgs::new(PROGRAM_NAME, PROGRAM_DESC);
         args.flag("h", "help", "Show this help");
 
-        args.flag("c", "compress", "Compress the given file");
-        args.flag("d", "decompress", "Decompress the given file");
+        args.flag("c", "compress", "Zipress the given file");
+        args.flag("d", "decompress", "Unzipress the given file");
 
         args.option("i", "input-file", "Specifies input file", "<path>", Occur::Optional, None);
         args.option("o", "output-file", "Specifies output file", "<path>", Occur::Optional, None);
@@ -51,13 +51,13 @@ impl Args {
             process::exit(0);
         }
 
-        let mut mode = Mode::Comp;
+        let mut mode = Mode::Zip;
         if args.value_of("decompress")? && args.value_of("compress")? {
             return Err(Box::new(ArgsError::new("operation", "Only one mode can be selected!")));
         } else if args.value_of("compress")? {
-            mode = Mode::Comp
+            mode = Mode::Zip
         } else if args.value_of("decompress")? {
-            mode = Mode::Decomp
+            mode = Mode::Unzip
         }
 
 
@@ -154,7 +154,7 @@ fn parse_cases() {
     assert_eq!(
         Args::parse(&good_args).unwrap(),
         Args {
-            mode: Mode::Decomp,
+            mode: Mode::Unzip,
             r#if: Path::from(OK),
             r#of: Path::from("new.txt")
         });
