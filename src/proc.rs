@@ -60,8 +60,33 @@ impl Zip {
 
     #[inline]
     pub fn proc(self) -> ToSave {
-        todo!()
-        // self.original
+    
+        use crate::indexation::{
+            words::Words,
+            WordsMap,
+        };
+
+        let s = Self::split(&self.original);
+
+        let mut words = Words::new();
+
+        s.iter().map(|w| words.insert(w)).collect_vec();
+        for i in 2..=5 {
+            s.windows(i).map(|w| words.insert(&w.join(" "))).collect_vec();
+        }
+        words.clean();
+
+        let (w, c) = words.into_vecs();
+        let m = WordsMap::from(w, c);
+
+        for (ch, word) in m.iter() {
+            self.original.replace(word, ch.as_str());
+        }
+
+        ToSave {
+            content: self.original,
+            map: Some(m),
+        }
     }
 
     #[inline]
