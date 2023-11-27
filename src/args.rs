@@ -37,10 +37,10 @@ impl Args {
         args.flag("c", "compress", "Zipress the given file");
         args.flag("d", "decompress", "Unzipress the given file");
 
+        args.flag("f", "force", "Override output file if it's exists");
+
         args.option("i", "input-file", "Specifies input file", "<path>", Occur::Optional, None);
         args.option("o", "output-file", "Specifies output file", "<path>", Occur::Optional, None);
-
-        args.flag("f", "force", "Override output file if it's exists");
 
         args.parse(input)?;
 
