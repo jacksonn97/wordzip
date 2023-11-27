@@ -4,7 +4,7 @@
 use itertools::Itertools;
 
 use crate::{
-    indexation::Word,
+    indexation::WordsMap,
     fs::Files,
     indexation::*,
     Result,
@@ -23,27 +23,17 @@ pub enum Do {
 
 pub struct Zip {
     original: String,
-    compressed: String,
-    map: Map,
+    map: WordsMap,
 }
 
 pub struct Unzip {
     compressed: String,
-    original: String,
-    map: Map,
-}
-
-struct CharSet {
-    set: [char; 2]
-}
-
-struct Map {
-    map: HashMap<CharSet, String>
+    map: WordsMap,
 }
 
 pub struct ToSave {
     content: String,
-    map: Option<Map>
+    map: Option<WordsMap>
 }
 
 impl Do {
