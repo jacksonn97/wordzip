@@ -45,39 +45,102 @@ impl Do {
             Self::Unzip(u)  => u.proc(),
         }
     }
+
 }
 
 impl Zip {
 
     #[inline]
-    pub fn new(original: String) -> Self {
-        unimplemented!()
+    fn from(original: String) -> Zip {
+        Zip {
+            original,
+            map: WordsMap::new(),
+        }
     }
 
     #[inline]
     pub fn proc(self) -> ToSave {
-        unimplemented!()
+        todo!()
+        // self.original
     }
+
+    #[inline]
+    fn split(s: &str) -> Vec<String> {
+
+        use ch::Ch;
+
+        let mut vec: Vec<String> = Vec::with_capacity(s.len()/8);
+        let mut buf = String::with_capacity(15);
+        
+        let mut chars = s.chars().peekable();
+        let mut prev = Ch::from(*chars.peek().expect("Specify non-empty file!"));
+
+
+        for c in chars {
+            let current = Ch::from(c);
+            if current != prev && !buf.is_empty() {
+                vec.push(buf.to_owned());
+                buf.clear()
+            } 
+            buf.push(c);
+            prev = current
+        }
+        if !buf.is_empty() {
+            vec.push(buf.to_owned())
+        }
+
+        vec
+    }
+
 }
 
 impl Unzip {
 
     #[inline]
-    pub fn new(original: String) -> Self {
-        unimplemented!()
+    fn from(original: String) -> Unzip {
+        Unzip {
+            compressed: original,
+            map: WordsMap::new(),
+        }
     }
 
     #[inline]
     pub fn proc(self) -> ToSave {
         unimplemented!()
     }
+
 }
 
+pub(self) mod ch {
 
-
-
-impl From<[char; 2]> for CharSet {
-    fn from(set: [char; 2]) -> Self {
-        Self { set }
+    #[derive(PartialEq, Eq)]
+    pub enum Ch {
+        WhiteSpace,
+        Alpha,
+        PuncSym,
     }
+
+    impl Ch {
+        #[inline]
+        pub fn from(c: char) -> Self {
+            if char::is_whitespace(c) {
+                Self::WhiteSpace
+            } else if char::is_alphabetic(c) {
+                Self::Alpha
+            } else {
+                Self::PuncSym
+            }
+        }
+
+    }
+}
+
+#[test]
+fn split() {
+    use self::Zip;
+    let s = "some, string.. with !some \n symbols \t, need to separate this ";
+    let rus = "некая русская строка \n, с \u{2223} ,, ,as to";
+
+    assert_eq!(Zip::split(s), vec!["some", ",", " ", "string", "..", " ", "with", " ", "!", "some", " \n ", "symbols", " \t", ",", " ", "need", " ", "to", " ", "separate", " ", "this", " "]);
+    assert_eq!(Zip::split(rus), vec![ "некая", " ", "русская", " ", "строка", " \n", ",", " ","с", " ", "\u{2223}", " ", ",,", " ", ",", "as", " ", "to" ]);
 }
