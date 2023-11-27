@@ -104,6 +104,17 @@ impl WordsMap {
 
     }
 
+    #[inline]
+    pub fn iter(&self) -> std::collections::hash_map::Iter<CharSet, String> {
+        self.map.iter()
+    }
+}
+
+impl CharSet {
+    #[inline]
+    pub fn as_str(&self) -> &String {
+        &self.set
+    }
 }
 
 impl From<String> for CharSet {
