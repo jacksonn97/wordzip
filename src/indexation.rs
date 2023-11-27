@@ -166,11 +166,11 @@ pub mod words {
         }
         
         #[inline]
-        pub fn insert(&mut self, k: &str) {
+        pub fn insert(&mut self, k: &str, windos_mode: bool) {
 
             if let Some(w) = self.words.iter_mut().find(|w| *w.str() == k) {
                 w.add()
-            } else if Self::word_check(k) {
+            } else if Self::word_check(k, windos_mode) {
                 if k.chars().any(|c| self.unused.contains(&c)) {
                     todo!("try hard")
                 }
@@ -179,8 +179,9 @@ pub mod words {
         }
 
         #[inline]
-        pub fn word_check(s: &str) -> bool {
-            s.len() >= 3
+        pub fn word_check(s: &str, windos_mode: bool) -> bool {
+            !windos_mode && s.len() >= 3 ||
+            s.len() >= 15
         }
         
         #[inline]

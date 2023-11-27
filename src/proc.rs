@@ -70,9 +70,9 @@ impl Zip {
 
         let mut words = Words::new();
 
-        s.iter().map(|w| words.insert(w)).collect_vec();
+        s.iter().map(|w| words.insert(w, false)).collect_vec();
         for i in 2..=5 {
-            s.windows(i).map(|w| words.insert(&w.join(" "))).collect_vec();
+            s.windows(i).map(|w| words.insert(&w.join(" "), true)).collect_vec();
         }
         words.clean();
 
