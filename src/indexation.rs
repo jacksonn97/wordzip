@@ -1,72 +1,61 @@
-
-use std::collections::{ HashMap, VecDeque };
-use itertools::Itertools;
 use self::words::Word;
+use itertools::Itertools;
+use std::collections::{BTreeMap, VecDeque};
+use std::fmt::Display;
 
 #[derive(Debug)]
 pub struct WordsMap {
-    map: HashMap<CharSet, String>
+    map: BTreeMap<CharSet, String>,
 }
 
-#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
 pub struct CharSet {
-    set: String
+    set: String,
 }
 
 impl WordsMap {
-
-    #[inline]
-    pub fn new() -> Self {
-        Self { map: HashMap::new() }
-    }
-
     #[inline]
     pub fn from(w: Vec<Word>, c: Vec<char>) -> Self {
-        let mut map: HashMap<CharSet, String> = HashMap::with_capacity(w.len());
+        let mut map: BTreeMap<CharSet, String> = BTreeMap::new();
 
-        if w.len() > c.len() {
-            w.into_iter().zip(c.into_iter())
-                .map(|(w, c)| map.insert(c.into(), w.into_str())).collect_vec();
-            Self {
-                map
-            }
+        if w.len() < c.len() {
+            w.into_iter()
+                .zip(c.into_iter())
+                .map(|(w, c)| map.insert(c.into(), w.into_str()))
+                .collect_vec();
+            Self { map }
         } else {
             let (wl, cl) = (w.len(), c.len());
             let mut c = Self::product(c, Self::amount_digraphs(wl, cl));
 
             for w in w {
+                if c.is_empty() { break }
                 if w.word_type().is_verylong() {
-                    map.insert(c.pop_front().expect("Fail on pop_front!"), w.into_str());
+                    map.insert(c.pop_front().unwrap(), w.into_str());
                 } else {
-                    map.insert(c.pop_back().expect("Fail on pop_back!"), w.into_str());
+                    map.insert(c.pop_back().unwrap(), w.into_str());
                 }
             }
 
-            Self {
-                map
-            }
+            Self { map }
         }
     }
 
     #[inline]
-    pub fn create_from(&mut self, w: Vec<Word>, c: Vec<char>) {
-
-        if w.len() > c.len() {
-            w.into_iter().zip(c.into_iter())
-                .map(|(w, c)| self.map.insert(c.into(), w.into_str())).collect_vec();
-        } else {
-            let (wl, cl) = (w.len(), c.len());
-            let mut c = Self::product(c, Self::amount_digraphs(wl, cl));
-
-            for w in w {
-                if w.word_type().is_verylong() {
-                    self.map.insert(c.pop_front().expect("Fail on pop_front!"), w.into_str());
+    pub fn from_plain(plain: String) -> Self {
+        let mut map: BTreeMap<CharSet, String> = BTreeMap::new();
+        plain
+            .lines()
+            .map(|s| {
+                if let Some((ch, word)) = s.split(':').collect_tuple() {
+                    map.insert(ch.into(), word.into())
                 } else {
-                    self.map.insert(c.pop_back().expect("Fail on pop_back!"), w.into_str());
+                    None
                 }
-            }
+            })
+            .collect_vec();
 
-        }
+        Self { map }
     }
 
     #[inline]
@@ -81,31 +70,23 @@ impl WordsMap {
     }
 
     #[inline]
-    pub fn product(mut c: Vec<char>, amount: usize) -> VecDeque<CharSet> {
+    fn product(c: Vec<char>, amount: usize) -> VecDeque<CharSet> {
+        let basic = amount * c.len();
+        let (first, _) = c.split_at(amount);
 
-        let basic = {
-            let mut bas = 0;
-            while amount > bas {
-                bas += 1;
-                bas = bas * c.len();
-            }
-            bas
-        };
-        let def = c.split_off(basic);
-
-        let mut r = def.iter()
+        let mut r = first
+            .iter()
             .cartesian_product(&c)
-            .take(amount)
+            .take(basic)
             .map(|c| c.into())
             .collect::<Vec<CharSet>>();
 
-        r.append(&mut def.iter().map(|c| c.into()).collect::<Vec<CharSet>>());
+        r.append(&mut c.iter().map(|c| c.into()).collect::<Vec<CharSet>>());
         r.into()
-
     }
 
     #[inline]
-    pub fn iter(&self) -> std::collections::hash_map::Iter<CharSet, String> {
+    pub fn iter(&self) -> std::collections::btree_map::Iter<CharSet, String> {
         self.map.iter()
     }
 }
@@ -117,28 +98,40 @@ impl CharSet {
     }
 }
 
-impl From<String> for CharSet {
-    fn from(set: String) -> Self {
-        assert!(set.len() > 2);
-        Self { set }
+impl Display for CharSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.set)
+    }
+}
+
+impl From<&str> for CharSet {
+    fn from(set: &str) -> Self {
+        assert!(set.len() <= 2);
+        Self { set: set.into() }
     }
 }
 
 impl From<char> for CharSet {
     fn from(set: char) -> Self {
-        Self { set: set.to_string() }
+        Self {
+            set: set.to_string(),
+        }
     }
 }
 
 impl From<&char> for CharSet {
     fn from(set: &char) -> Self {
-        Self { set: set.to_string() }
+        Self {
+            set: set.to_string(),
+        }
     }
 }
 
 impl From<(&char, &char)> for CharSet {
     fn from(set: (&char, &char)) -> Self {
-        Self { set: format!("{}{}", set.0, set.1) }
+        Self {
+            set: format!("{}{}", set.0, set.1),
+        }
     }
 }
 
@@ -151,103 +144,92 @@ pub mod words {
         words: Vec<Word>,
         unused: Vec<char>,
 
-        n: usize,           // for Iterator implementation
+        n: usize, // for Iterator implementation
     }
 
     impl Words {
-
         #[inline]
         pub fn new() -> Self {
             Words {
                 words: Vec::new(),
                 n: 0,
-                unused: ('\u{00ff}'..='\u{0fff}').collect()
+                unused: { let mut r = ('\u{41}'..'\u{5a}').collect_vec();
+                    r.append(&mut ('\u{61}'..'\u{7b}').collect_vec());
+                    r },
             }
         }
-        
+
         #[inline]
         pub fn insert(&mut self, k: &str, windos_mode: bool) {
-
+            if k.len() <= 2 {
+                let f = k.chars().next().unwrap();
+                self.unused.iter_mut().map(|c| if *c == f { *c = '\u{0}' }).for_each(drop);
+            }
             if let Some(w) = self.words.iter_mut().find(|w| *w.str() == k) {
                 w.add()
             } else if Self::word_check(k, windos_mode) {
-                if k.chars().any(|c| self.unused.contains(&c)) {
-                    todo!("try hard")
-                }
                 self.words.push(Word::new(k.to_string()));
             }
         }
 
         #[inline]
         pub fn word_check(s: &str, windos_mode: bool) -> bool {
-            !windos_mode && s.len() >= 3 ||
-            s.len() >= 15
+            !windos_mode && s.len() >= 4 || s.len() >= 15
         }
-        
+
         #[inline]
-        pub fn sort(&mut self) {
+        fn sort(&mut self) {
             self.words.sort_by_key(|w| w.len() * w.amount());
             self.words.reverse();
-
         }
 
         #[inline]
-        pub fn clean(&mut self) {
+        pub fn clear(&mut self) {
             self.sort();
 
-            self.words = self.words.to_owned().into_iter()
-                .filter(|w| 
-                    w.word_type().is_short() && w.amount() >= 15 ||
-                    w.word_type().is_long() && w.amount() >= 10 ||
-                    w.word_type().is_verylong() && w.amount() >= 5
-                ).collect_vec();
+            self.words = self
+                .words
+                .to_owned()
+                .into_iter()
+                .filter(|w| {
+                    w.word_type().is_short() && w.amount() >= 15
+                        || w.word_type().is_long() && w.amount() >= 10
+                        || w.word_type().is_verylong() && w.amount() >= 5
+                })
+                .collect_vec();
 
-            self.unused = self.unused.to_owned()
+            self.unused = self
+                .unused
+                .to_owned()
                 .into_iter()
                 .filter(|c| *c != b'\0' as char)
-                .collect_vec()[32..]
-                .to_vec();
-        }
-
-        #[inline]
-        pub fn total(&self) -> usize {
-            self.words.len()
-        }
-
-        #[inline]
-        pub fn total_unused(&self) -> usize {
-            self.unused.len()
-        }
-
-        #[inline]
-        pub fn unused(&self) -> Vec<char> {
-            self.unused.to_owned()
+                .collect_vec();
         }
 
         #[inline]
         pub fn into_vecs(self) -> (Vec<Word>, Vec<char>) {
             (self.words, self.unused)
         }
+
+        #[inline]
+        pub fn is_empty(&self) -> bool {
+            self.words.is_empty()
+        }
     }
 
     impl Iterator for Words {
-
         type Item = Word;
 
         #[inline]
         fn next(&mut self) -> Option<Self::Item> {
             if self.n < self.words.len() {
                 self.n += 1;
-                Some(self.words[self.n-1].to_owned())
+                Some(self.words[self.n - 1].to_owned())
             } else {
                 None
             }
         }
-
-
     }
-
-
 
     #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
     pub struct Word {
@@ -264,7 +246,6 @@ pub mod words {
     }
 
     impl Word {
-        
         #[inline]
         pub fn str(&self) -> &String {
             &self.s
@@ -297,7 +278,7 @@ pub mod words {
             Word {
                 s,
                 count: 1,
-                word_type: WordType::from(len)
+                word_type: WordType::from(len),
             }
         }
 
@@ -308,7 +289,6 @@ pub mod words {
     }
 
     impl WordType {
-
         #[inline]
         pub fn from(l: usize) -> Self {
             if l > 15 {
@@ -323,9 +303,9 @@ pub mod words {
         #[inline]
         pub fn unwrap(&self) -> usize {
             match self {
-                Self::VeryLong(u)   => *u,
-                Self::Long(u)       => *u,
-                Self::Short(u)      => *u,
+                Self::VeryLong(u) => *u,
+                Self::Long(u) => *u,
+                Self::Short(u) => *u,
             }
         }
 
@@ -356,34 +336,51 @@ pub mod words {
             }
         }
     }
-
 }
 
 #[test]
 fn digraphs() {
-
-    use itertools::Itertools;
     use crate::tests::WoCh;
+    use itertools::Itertools;
 
     let chars: Vec<char> = ('a'..='z').collect();
-    let words = vec![ "asda", "asdf", "fjjfj", "adfjkj", "sdffjjf", "asdfasdf", "asdf", "asdf", "fdf", "dafasd", "dfd", "dfda", "asd" ]
-        .into_iter()
-        .map(|w| w.to_string())
-        .collect_vec();
-
+    let words = vec![
+        "asda", "asdf", "fjjfj", "adfjkj", "sdffjjf", "asdfasdf", "asdf", "asdf", "fdf", "dafasd",
+        "dfd", "dfda", "asd",
+    ]
+    .into_iter()
+    .map(|w| w.to_string())
+    .collect_vec();
 
     // 1 iteration
-    let zero = WoCh { words: words.clone(), chars: chars.clone() };
-    let one = WoCh { words: words.clone(), chars: chars[..=6].to_vec() };
-    let two = WoCh { words: words.clone(), chars: chars[..=5].to_vec() };
+    let zero = WoCh {
+        words: words.clone(),
+        chars: chars.clone(),
+    };
+    let one = WoCh {
+        words: words.clone(),
+        chars: chars[..=6].to_vec(),
+    };
+    let two = WoCh {
+        words: words.clone(),
+        chars: chars[..=5].to_vec(),
+    };
 
     dbg!(&zero.len());
     dbg!(&one.len());
     dbg!(&two.len());
 
     // right value - right side
-    assert_eq!(WordsMap::amount_digraphs(zero.words.len(), zero.chars.len()), 0);
-    assert_eq!(WordsMap::amount_digraphs(one.words.len(), one.chars.len()), 1);
-    assert_eq!(WordsMap::amount_digraphs(two.words.len(), two.chars.len()), 2);
-
+    assert_eq!(
+        WordsMap::amount_digraphs(zero.words.len(), zero.chars.len()),
+        0
+    );
+    assert_eq!(
+        WordsMap::amount_digraphs(one.words.len(), one.chars.len()),
+        1
+    );
+    assert_eq!(
+        WordsMap::amount_digraphs(two.words.len(), two.chars.len()),
+        2
+    );
 }

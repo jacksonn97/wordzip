@@ -1,4 +1,3 @@
-
 pub struct WoCh {
     pub words: Vec<String>,
     pub chars: Vec<char>,

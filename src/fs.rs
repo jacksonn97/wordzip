@@ -1,31 +1,27 @@
+use crate::Result;
+use std::{fmt::Display, fs::File, io::Write, path::PathBuf as Path};
 
-use crate::{
-    args::*,
-    Result,
-};
-use std::fs::File;
-
-pub struct Files {
-    mode: Mode,
-    pub(crate) r#if: File,
-    pub(crate) r#of: File,
+#[derive(Debug)]
+pub struct ToSave {
+    content: String,
 }
 
-impl Files {
-
+impl ToSave {
     #[inline]
-    pub fn open(a: Args) -> Result<Self> {
-        Ok(
-        Files {
-            mode: *a.mode(),
-            r#if: File::open(a.r#if())?,
-            r#of: File::create(a.r#of())?,
-        })
+    pub fn new(content: String) -> Self {
+        Self { content }
     }
 
     #[inline]
-    pub fn save(&mut self, of: String) {
-        unimplemented!()
+    pub fn save(self, path: Path) -> Result<()> {
+        let mut f = File::create(path)?;
+        f.write_all(self.content.as_bytes())?;
+        Ok(())
     }
+}
 
+impl Display for ToSave {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.content)
+    }
 }
